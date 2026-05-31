@@ -1,3 +1,5 @@
+import 'package:amerta_pay/views/kelola_bill_view.dart';
+import 'package:amerta_pay/views/kelola_customer_view.dart';
 import 'package:flutter/material.dart';
 
 // ── Auth Screens ───────────────────────────────────────────────
@@ -29,9 +31,7 @@ class AmertaPayApp extends StatelessWidget {
       title: 'AmertaPay',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFF26C6A6),
-        ),
+        colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF26C6A6)),
         fontFamily: 'Poppins',
         useMaterial3: true,
         scaffoldBackgroundColor: const Color(0xFFF0F4F8),
@@ -42,12 +42,8 @@ class AmertaPayApp extends StatelessWidget {
         '/': (ctx) => const SplashScreen(),
         '/welcome': (ctx) => const WelcomeView(),
         '/role-picker': (ctx) => const RolePickerView(),
-        '/login-admin': (ctx) => const LoginView(
-              isAdmin: true,
-            ),
-        '/login-customer': (ctx) => const LoginView(
-              isAdmin: false,
-            ),
+        '/login-admin': (ctx) => const LoginView(isAdmin: true),
+        '/login-customer': (ctx) => const LoginView(isAdmin: false),
         '/register-admin': (ctx) => const RegisterAdminView(),
         '/contact-admin': (ctx) => const ContactAdminView(),
 
@@ -55,17 +51,11 @@ class AmertaPayApp extends StatelessWidget {
         '/dashboard-admin': (ctx) => const DashboardAdminView(),
         '/service-admin': (ctx) => const ServiceAdminView(),
         '/profile-admin': (ctx) => const ProfileAdminView(),
+        '/customer-admin': (ctx) => const KelolaCustomerView(),
+        '/bill-admin': (ctx) => const KelolaBillView(),
 
         // ── CUSTOMER (sementara) ──────────────────────────────
-        '/dashboard-customer': (ctx) =>
-            const _TempCustomerDashboard(),
-
-        // ── ADMIN PLACEHOLDER ─────────────────────────────────
-        '/customer-admin': (ctx) =>
-            const _TempPage(title: 'Kelola Customer'),
-
-        '/bill-admin': (ctx) =>
-            const _TempPage(title: 'Kelola Bill'),
+        '/dashboard-customer': (ctx) => const _TempCustomerDashboard(),
       },
     );
   }
@@ -78,9 +68,7 @@ class AmertaPayApp extends StatelessWidget {
 class _TempPage extends StatelessWidget {
   final String title;
 
-  const _TempPage({
-    required this.title,
-  });
+  const _TempPage({required this.title});
 
   @override
   Widget build(BuildContext context) {
@@ -101,10 +89,7 @@ class _TempPage extends StatelessWidget {
         child: Text(
           'Halaman $title\nakan dibuat selanjutnya.',
           textAlign: TextAlign.center,
-          style: const TextStyle(
-            fontSize: 16,
-            color: Color(0xFF4A5568),
-          ),
+          style: const TextStyle(fontSize: 16, color: Color(0xFF4A5568)),
         ),
       ),
     );
@@ -125,10 +110,7 @@ class _TempCustomerDashboard extends StatelessWidget {
       appBar: AppBar(
         title: const Text(
           'Dashboard Customer',
-          style: TextStyle(
-            fontWeight: FontWeight.w700,
-            color: Colors.white,
-          ),
+          style: TextStyle(fontWeight: FontWeight.w700, color: Colors.white),
         ),
         backgroundColor: const Color(0xFF26C6A6),
         elevation: 0,
@@ -137,10 +119,7 @@ class _TempCustomerDashboard extends StatelessWidget {
         child: Text(
           'Dashboard Customer\nakan dibuat selanjutnya.',
           textAlign: TextAlign.center,
-          style: TextStyle(
-            fontSize: 16,
-            color: Color(0xFF4A5568),
-          ),
+          style: TextStyle(fontSize: 16, color: Color(0xFF4A5568)),
         ),
       ),
     );
