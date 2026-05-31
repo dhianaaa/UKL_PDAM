@@ -180,7 +180,7 @@ class _KelolaBillViewState extends State<KelolaBillView> {
                                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                         children: [
                                           Text(
-                                            '${b.monthName} ${b.year} - Rp ${NumberFormat('#,###').format(b.totalPrice)}',
+                                            '${b.monthName} ${b.year} - Rp ${NumberFormat('#,###').format(b.amount)}',
                                             style: const TextStyle(fontSize: 12, color: AppColors.textGrey),
                                           ),
                                           StatusBadge(status: b.status),

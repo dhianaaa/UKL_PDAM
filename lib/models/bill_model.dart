@@ -9,8 +9,10 @@ class BillModel {
   final int year;
   final String? measurementNumber;
   final int usageValue;
-  final int totalPrice;
-  final String status; // belum_dibayar, belum_diverifikasi, lunas
+final int amount;
+  final bool paid;
+  final bool verifiedPayment;
+
   final String? createdAt;
 
   BillModel({
@@ -22,8 +24,9 @@ class BillModel {
     required this.year,
     this.measurementNumber,
     required this.usageValue,
-    required this.totalPrice,
-    required this.status,
+    required this.amount,
+    required this.paid,
+    required this.verifiedPayment,
     this.createdAt,
   });
 
@@ -39,31 +42,67 @@ class BillModel {
       year: json['year'] ?? 0,
       measurementNumber: json['measurement_number'],
       usageValue: json['usage_value'] ?? 0,
-      totalPrice: json['total_price'] ?? 0,
-      status: json['status'] ?? 'belum_dibayar',
+      amount: json['amount'] ??
+    ((json['usage_value'] ?? 0) * (json['price'] ?? 0)),
+
+      paid: json['paid'] ?? false,
+      verifiedPayment: json['verified_payment'] ?? false,
+
       createdAt: json['created_at'],
     );
   }
 
+  /// Value status untuk widget
+  String get status {
+    if (!paid) {
+      return 'belum_dibayar';
+    }
+
+    if (paid && !verifiedPayment) {
+      return 'belum_diverifikasi';
+    }
+
+    return 'lunas';
+  }
+
+  /// Label yang ditampilkan ke user
   String get statusLabel {
     switch (status) {
       case 'belum_dibayar':
         return 'Belum Dibayar';
+
       case 'belum_diverifikasi':
         return 'Belum Diverifikasi';
+
       case 'lunas':
         return 'Dibayar';
+
       default:
-        return status;
+        return 'Belum Dibayar';
     }
   }
 
   String get monthName {
     const months = [
-      '', 'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
-      'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
+      '',
+      'Januari',
+      'Februari',
+      'Maret',
+      'April',
+      'Mei',
+      'Juni',
+      'Juli',
+      'Agustus',
+      'September',
+      'Oktober',
+      'November',
+      'Desember'
     ];
-    if (month >= 1 && month <= 12) return months[month];
+
+    if (month >= 1 && month <= 12) {
+      return months[month];
+    }
+
     return month.toString();
   }
 }

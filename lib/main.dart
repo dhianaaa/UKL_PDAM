@@ -1,6 +1,8 @@
+import 'package:flutter/material.dart';
+import 'package:intl/date_symbol_data_local.dart';
+
 import 'package:amerta_pay/views/kelola_bill_view.dart';
 import 'package:amerta_pay/views/kelola_customer_view.dart';
-import 'package:flutter/material.dart';
 
 // ── Auth Screens ───────────────────────────────────────────────
 import 'views/splash_screen.dart';
@@ -15,10 +17,11 @@ import 'views/dashboard_admin_view.dart';
 import 'views/service_view.dart';
 import 'views/profile_admin_view.dart';
 
-// ── Customer Screens (belum dibuat) ───────────────────────────
-// import 'views/dashboard_customer_view.dart';
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
 
-void main() {
+  await initializeDateFormatting('id_ID', null);
+
   runApp(const AmertaPayApp());
 }
 
@@ -31,7 +34,9 @@ class AmertaPayApp extends StatelessWidget {
       title: 'AmertaPay',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF26C6A6)),
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: const Color(0xFF26C6A6),
+        ),
         fontFamily: 'Poppins',
         useMaterial3: true,
         scaffoldBackgroundColor: const Color(0xFFF0F4F8),
@@ -54,16 +59,12 @@ class AmertaPayApp extends StatelessWidget {
         '/customer-admin': (ctx) => const KelolaCustomerView(),
         '/bill-admin': (ctx) => const KelolaBillView(),
 
-        // ── CUSTOMER (sementara) ──────────────────────────────
+        // ── CUSTOMER ──────────────────────────────────────────
         '/dashboard-customer': (ctx) => const _TempCustomerDashboard(),
       },
     );
   }
 }
-
-// ──────────────────────────────────────────────────────────────
-// Placeholder Page
-// ──────────────────────────────────────────────────────────────
 
 class _TempPage extends StatelessWidget {
   final String title;
@@ -89,16 +90,15 @@ class _TempPage extends StatelessWidget {
         child: Text(
           'Halaman $title\nakan dibuat selanjutnya.',
           textAlign: TextAlign.center,
-          style: const TextStyle(fontSize: 16, color: Color(0xFF4A5568)),
+          style: const TextStyle(
+            fontSize: 16,
+            color: Color(0xFF4A5568),
+          ),
         ),
       ),
     );
   }
 }
-
-// ──────────────────────────────────────────────────────────────
-// Temporary Customer Dashboard
-// ──────────────────────────────────────────────────────────────
 
 class _TempCustomerDashboard extends StatelessWidget {
   const _TempCustomerDashboard({super.key});
@@ -110,7 +110,10 @@ class _TempCustomerDashboard extends StatelessWidget {
       appBar: AppBar(
         title: const Text(
           'Dashboard Customer',
-          style: TextStyle(fontWeight: FontWeight.w700, color: Colors.white),
+          style: TextStyle(
+            fontWeight: FontWeight.w700,
+            color: Colors.white,
+          ),
         ),
         backgroundColor: const Color(0xFF26C6A6),
         elevation: 0,
@@ -119,7 +122,10 @@ class _TempCustomerDashboard extends StatelessWidget {
         child: Text(
           'Dashboard Customer\nakan dibuat selanjutnya.',
           textAlign: TextAlign.center,
-          style: TextStyle(fontSize: 16, color: Color(0xFF4A5568)),
+          style: TextStyle(
+            fontSize: 16,
+            color: Color(0xFF4A5568),
+          ),
         ),
       ),
     );

@@ -7,84 +7,117 @@ import 'package:http/http.dart' as http;
 import '../models/auth_model.dart';
 import '../widgets/bottom_nav.dart';
 import '../widgets/alert.dart';
+import 'dart:async';
 
 class DashboardAdminView extends StatefulWidget {
   final String? token;
 
   const DashboardAdminView({super.key, this.token});
+
   @override
   State<DashboardAdminView> createState() => _DashboardAdminViewState();
 }
 
 class _DashboardAdminViewState extends State<DashboardAdminView> {
   final AdminService _adminService = AdminService();
-Future<int> getTotalCustomer() async {
-  final auth = await AuthModel.getFromPrefs();
-  final token = auth.token;
+  ActivityService? _activityService;
+  Timer? _timer;
 
-  print("TOKEN: $token");
-
-  final res = await http.get(
-    Uri.parse('$baseUrl/customers?page=1&quantity=10&search='),
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': 'Bearer $token',
-      if (appKey.isNotEmpty) 'app-key': appKey,
-    },
-  );
-
-  print("STATUS: ${res.statusCode}");
-  print("BODY: ${res.body}");
-
-  if (res.statusCode != 200) return 0;
-
-  final body = jsonDecode(res.body);
-  return body['count'] ?? 0;
-}
   String _namaAdmin = 'Admin';
   int _totalCustomer = 0;
   int _pembayaranBelum = 0;
   int _totalLayanan = 0;
-  List _recentBills = [];
-  List _recentCustomers = [];
+
+  // Ganti List _recentBills / _recentCustomers → pakai ActivityItem
+  List<ActivityItem> _recentActivities = [];
+
   bool _loading = true;
 
   static const _teal = Color(0xFF26C6A6);
   static const _bg = Color(0xFFF0F4F8);
 
+  // Jumlah item yang ditampilkan di dashboard
+  static const int _previewCount = 6;
+
   @override
   void initState() {
     super.initState();
     _loadData();
+    _timer = Timer.periodic(const Duration(seconds: 10), (_) {
+      _loadData(silent: true);
+    });
   }
 
-  Future<void> _loadData() async {
-    setState(() => _loading = true);
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  // ── getTotalCustomer ────────────────────────────────────────────
+  Future<int> getTotalCustomer() async {
+    final auth = await AuthModel.getFromPrefs();
+    final token = auth.token;
+
+    final res = await http.get(
+      Uri.parse('$baseUrl/customers?page=1&quantity=10&search='),
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $token',
+        if (appKey.isNotEmpty) 'app-key': appKey,
+      },
+    );
+
+    if (res.statusCode != 200) return 0;
+    final body = jsonDecode(res.body);
+    return body['count'] ?? 0;
+  }
+
+  // ── _loadData ───────────────────────────────────────────────────
+  Future<void> _loadData({bool silent = false}) async {
+    if (!silent) setState(() => _loading = true);
+
     try {
       final auth = await AuthModel.getFromPrefs();
       _namaAdmin = auth.name ?? 'Admin';
 
-      final statsResult = await _adminService.getDashboardStats();
+      // Login ulang supaya token selalu segar — sama persis seperti AllActivitiesScreen
+      final token = await ActivityService.login();
+      _activityService = ActivityService(token: token);
 
-// ambil total customer dari endpoint customer
-_totalCustomer = await getTotalCustomer();
+      // Jalankan semua fetch paralel
+      final results = await Future.wait([
+        _adminService.getDashboardStats(),
+        getTotalCustomer(),
+        _activityService!.fetchAll(),
+      ]);
 
-if (statsResult.status && statsResult.data != null) {
-  final data = statsResult.data!;
+      final statsResult = results[0] as dynamic;
+      final newTotalCustomer = results[1] as int;
+      final activities = results[2] as List<ActivityItem>;
 
-  _pembayaranBelum = data['pembayaran_belum'] ?? 0;
-  _totalLayanan = data['total_layanan'] ?? 0;
-  _recentBills = data['recent_bills'] ?? [];
-}
+      setState(() {
+        _totalCustomer = newTotalCustomer;
 
-      _recentCustomers = await _adminService.getRecentCustomers();
+        if (statsResult.status && statsResult.data != null) {
+          final data = statsResult.data!;
+          _pembayaranBelum = data['pembayaran_belum'] ?? 0;
+          _totalLayanan = data['total_layanan'] ?? 0;
+        }
+
+        // Ambil hanya _previewCount item terbaru (sudah di-sort dari fetchAll)
+        _recentActivities = activities.take(_previewCount).toList();
+        _loading = false;
+      });
     } catch (e) {
-      if (mounted) AlertMessage.show(context, 'Gagal memuat data', false);
-    } finally {
-      if (mounted) setState(() => _loading = false);
+      if (mounted) {
+        setState(() => _loading = false);
+        AlertMessage.show(context, 'Gagal memuat data', false);
+      }
     }
   }
 
+  // ── BUILD ───────────────────────────────────────────────────────
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -240,48 +273,6 @@ if (statsResult.status && statsResult.data != null) {
 
   // ── Recent Activity ─────────────────────────────────────────────
   Widget _buildRecentActivity() {
-    // Gabungkan bills + customers, ambil created_at dari data asli
-    final List<Map<String, dynamic>> allItems = [];
-
-    for (final bill in _recentBills) {
-      // Coba semua kemungkinan nama field tanggal dari API
-      final String? rawDate =
-          bill['created_at'] ??
-          bill['createdAt'] ??
-          bill['payment_date'] ??
-          bill['date'];
-
-      allItems.add({
-        'type': 'payment',
-        'data': bill,
-        'createdAt': rawDate != null
-            ? DateTime.tryParse(rawDate) ?? DateTime.now()
-            : DateTime.now(),
-      });
-    }
-
-    for (final cust in _recentCustomers) {
-      final String? rawDate =
-          cust['created_at'] ??
-          cust['createdAt'] ??
-          cust['registered_at'];
-
-      allItems.add({
-        'type': 'customer',
-        'data': cust,
-        'createdAt': rawDate != null
-            ? DateTime.tryParse(rawDate) ?? DateTime.now()
-            : DateTime.now(),
-      });
-    }
-
-    // Urutkan dari terbaru
-    allItems.sort((a, b) =>
-        (b['createdAt'] as DateTime).compareTo(a['createdAt'] as DateTime));
-
-    // Ambil max 5 item untuk preview di dashboard
-    final preview = allItems.take(7).toList();
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -329,7 +320,7 @@ if (statsResult.status && statsResult.data != null) {
               ),
             ],
           ),
-          child: preview.isEmpty
+          child: _recentActivities.isEmpty
               ? const Padding(
                   padding: EdgeInsets.all(24),
                   child: Center(
@@ -340,54 +331,31 @@ if (statsResult.status && statsResult.data != null) {
                   ),
                 )
               : Column(
-                  children: preview.asMap().entries.map((e) {
+                  children: _recentActivities.asMap().entries.map((e) {
                     final idx = e.key;
                     final item = e.value;
-                    final DateTime createdAt = item['createdAt'];
-                    final bool isLast = idx == preview.length - 1;
+                    final isLast = idx == _recentActivities.length - 1;
+                    final isVerified = item.status == 'verified';
+                    final isPayment = item.type == 'payment';
 
-                    if (item['type'] == 'payment') {
-                      final bill = item['data'];
-                      final isVerified =
-                          bill['is_verified'] == true ||
-                          bill['status'] == 'SUDAH' ||
-                          bill['status'] == 'verified' ||
-                          bill['verified_at'] != null;
-
-                      final inv =
-                          bill['invoice_number'] ??
-                          'INV/${bill['year'] ?? '2024'}/${bill['month']?.toString().padLeft(2, '0') ?? '01'}/${bill['id']?.toString().padLeft(3, '0') ?? '000'}';
-
-                      return _ActivityTile(
-                        icon: Icons.receipt_long_rounded,
-                        title: 'Pembayaran baru',
-                        subtitle: inv,
-                        trailing: isVerified ? 'Diverifikasi' : 'Belum Diverifikasi',
-                        trailingColor: isVerified
-                            ? const Color(0xFF26C6A6)
-                            : const Color(0xFFFF8A80),
-                        trailingBg: isVerified
-                            ? const Color(0xFFE8F5E9)
-                            : const Color(0xFFFFEBEE),
-                        createdAt: createdAt,  // ← waktu dari API
-                        showDivider: !isLast,
-                      );
-                    } else {
-                      final cust = item['data'];
-                      final custNum = cust['customer_number'] ?? cust['code'] ?? '-';
-                      final custName = cust['name'] ?? '-';
-
-                      return _ActivityTile(
-                        icon: Icons.people_rounded,
-                        title: 'Customer baru',
-                        subtitle: '$custNum - $custName',
-                        trailing: null,
-                        trailingColor: Colors.transparent,
-                        trailingBg: Colors.transparent,
-                        createdAt: createdAt,  // ← waktu dari API
-                        showDivider: !isLast,
-                      );
-                    }
+                    return _ActivityTile(
+                      icon: isPayment
+                          ? Icons.receipt_long_rounded
+                          : Icons.people_rounded,
+                      title: item.title,
+                      subtitle: item.subtitle,
+                      trailing: isPayment
+                          ? (isVerified ? 'Diverifikasi' : 'Belum Diverifikasi')
+                          : null,
+                      trailingColor: isVerified
+                          ? const Color(0xFF26C6A6)
+                          : const Color(0xFFFF8A80),
+                      trailingBg: isVerified
+                          ? const Color(0xFFE8F5E9)
+                          : const Color(0xFFFFEBEE),
+                      createdAt: item.createdAt,
+                      showDivider: !isLast,
+                    );
                   }).toList(),
                 ),
         ),
@@ -471,7 +439,7 @@ class _ActivityTile extends StatelessWidget {
   final String? trailing;
   final Color trailingColor;
   final Color trailingBg;
-  final DateTime createdAt;   // ← ganti dari String timeAgo ke DateTime
+  final DateTime createdAt;
   final bool showDivider;
 
   const _ActivityTile({
@@ -485,7 +453,6 @@ class _ActivityTile extends StatelessWidget {
     required this.showDivider,
   });
 
-  // Hitung timeAgo dari DateTime
   String get _timeAgo {
     final diff = DateTime.now().difference(createdAt);
     if (diff.inSeconds < 60) return '${diff.inSeconds} detik yang lalu';
@@ -503,7 +470,6 @@ class _ActivityTile extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
           child: Row(
             children: [
-              // Icon
               Container(
                 width: 40,
                 height: 40,
@@ -514,8 +480,6 @@ class _ActivityTile extends StatelessWidget {
                 child: Icon(icon, color: Colors.grey.shade600, size: 20),
               ),
               const SizedBox(width: 12),
-
-              // Text
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -539,13 +503,11 @@ class _ActivityTile extends StatelessWidget {
                   ],
                 ),
               ),
-
-              // Trailing (waktu + badge)
               Column(
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
                   Text(
-                    _timeAgo,  // ← dihitung otomatis dari createdAt
+                    _timeAgo,
                     style: TextStyle(fontSize: 10, color: Colors.grey.shade400),
                   ),
                   if (trailing != null) ...[

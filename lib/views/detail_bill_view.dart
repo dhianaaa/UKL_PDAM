@@ -27,17 +27,41 @@ class _DetailBillViewState extends State<DetailBillView> {
 
   Future<void> _load() async {
     setState(() => _loading = true);
+
     final r = await _billService.getById(widget.billId);
+
+    print('DETAIL BILL RESPONSE:');
+    print(r);
+
     if (mounted) {
       setState(() {
         _loading = false;
-        if (r['status'] == true) _billData = r['data'] as Map<String, dynamic>;
+        if (r['status'] == true) {
+          _billData = r['data'] as Map<String, dynamic>;
+        }
       });
     }
   }
 
-  String get _status => _billData?['status'] ?? 'belum_dibayar';
-  Map<String, dynamic>? get _payment => _billData?['payment'];
+  String get _status {
+    final paid = _billData?['paid'] == true;
+    final verified = _billData?['verified_payment'] == true;
+
+    if (!paid) return 'belum_dibayar';
+    if (!verified) return 'belum_diverifikasi';
+    return 'lunas';
+  }
+
+  Map<String, dynamic>? get _payment {
+    final p = _billData?['payments'];
+
+    if (p is Map<String, dynamic>) {
+      return p;
+    }
+
+    return null;
+  }
+
   int? get _paymentId => _payment?['id'];
 
   String _formatCurrency(dynamic val) {
@@ -138,6 +162,8 @@ class _DetailBillViewState extends State<DetailBillView> {
         ],
       ),
     );
+    if (confirm != true || _paymentId == null) return;
+
     final r = await _paymentService.verify(_paymentId!);
 
     if (r['status'] == true) {
@@ -145,7 +171,11 @@ class _DetailBillViewState extends State<DetailBillView> {
         const SnackBar(content: Text('Pembayaran berhasil diverifikasi')),
       );
 
-      Navigator.pop(context);
+      await _load();
+
+      if (mounted) {
+        Navigator.pop(context, true);
+      }
     }
   }
 
@@ -229,7 +259,11 @@ class _DetailBillViewState extends State<DetailBillView> {
           ),
         );
 
-        Navigator.pop(context);
+        await _load();
+
+        if (mounted) {
+          Navigator.pop(context, true);
+        }
       }
     }
   }
@@ -297,8 +331,7 @@ class _DetailBillViewState extends State<DetailBillView> {
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Text(
-                                      _billData!['customer']?['username'] ??
-                                          '-',
+                                      _billData!['customer']?['name'] ?? '-',
                                       style: const TextStyle(
                                         fontWeight: FontWeight.bold,
                                         fontSize: 14,
@@ -356,17 +389,19 @@ class _DetailBillViewState extends State<DetailBillView> {
                               ],
                             ),
                             Row(
-  children: [
-    const Text(
-      'Layanan',
-      style: TextStyle(color: AppColors.textGrey),
-    ),
-    const Spacer(),
-    Text(
-      _billData!['customer']?['service']?['name'] ?? '-',
-    ),
-  ],
-),
+                              children: [
+                                const Text(
+                                  'Layanan',
+                                  style: TextStyle(color: AppColors.textGrey),
+                                ),
+                                const Spacer(),
+                                Text(
+                                  _billData!['service']?['name'] ??
+                                      '-'
+                                          '-',
+                                ),
+                              ],
+                            ),
                             Row(
                               children: [
                                 const Text(
@@ -374,9 +409,7 @@ class _DetailBillViewState extends State<DetailBillView> {
                                   style: TextStyle(color: AppColors.textGrey),
                                 ),
                                 const Spacer(),
-                                Text(
-                                  '${_billData!['usage_value'] ?? '-'}m³',
-                                ),
+                                Text('${_billData!['usage_value'] ?? '-'}m³'),
                               ],
                             ),
                             Row(
@@ -386,9 +419,7 @@ class _DetailBillViewState extends State<DetailBillView> {
                                   style: TextStyle(color: AppColors.textGrey),
                                 ),
                                 const Spacer(),
-                                Text(
-                                  _formatCurrency(_billData!['total_price']),
-                                ),
+                                Text(_formatCurrency(_billData!['amount'])),
                               ],
                             ),
                           ],
@@ -407,7 +438,16 @@ class _DetailBillViewState extends State<DetailBillView> {
                                 ),
                                 const Spacer(),
                                 Text(
-                                  _payment?['payment_date'] ?? '-',
+                                  _payment?['payment_date'] != null
+                                      ? DateFormat(
+                                          'dd MMM yyyy HH:mm',
+                                          'id_ID',
+                                        ).format(
+                                          DateTime.parse(
+                                            _payment!['payment_date'],
+                                          ).toLocal(),
+                                        )
+                                      : '-',
                                 ),
                               ],
                             ),
@@ -418,9 +458,7 @@ class _DetailBillViewState extends State<DetailBillView> {
                                   style: TextStyle(color: AppColors.textGrey),
                                 ),
                                 const Spacer(),
-                                Text(
-                                  _payment?['method'] ?? '-',
-                                ),
+                                Text(_payment?['method'] ?? '-'),
                               ],
                             ),
                             Row(
@@ -432,7 +470,9 @@ class _DetailBillViewState extends State<DetailBillView> {
                                 const Spacer(),
                                 Text(
                                   _payment != null
-                                      ? _formatCurrency(_payment!['amount'])
+                                      ? _formatCurrency(
+                                          _payment!['total_amount'],
+                                        )
                                       : '-',
                                 ),
                               ],
@@ -468,7 +508,7 @@ class _DetailBillViewState extends State<DetailBillView> {
                               ),
                               const SizedBox(height: 12),
                               if (_payment == null ||
-                                  _payment!['proof_image'] == null)
+                                  _payment!['payment_proof'] == null)
                                 const Center(
                                   child: Padding(
                                     padding: EdgeInsets.symmetric(vertical: 16),
@@ -484,21 +524,43 @@ class _DetailBillViewState extends State<DetailBillView> {
                               else
                                 Row(
                                   children: [
-                                    ClipRRect(
-                                      borderRadius: BorderRadius.circular(8),
-                                      child: Image.network(
-                                        '$baseUrl/payment-proof/${_payment!['proof_image']}',
-                                        width: 60,
-                                        height: 60,
-                                        fit: BoxFit.cover,
-                                        errorBuilder: (_, __, ___) => Container(
+                                    GestureDetector(
+                                      onTap: () {
+                                        showDialog(
+                                          context: context,
+                                          builder: (_) => Dialog(
+                                            backgroundColor: Colors.black,
+                                            insetPadding: const EdgeInsets.all(
+                                              10,
+                                            ),
+                                            child: InteractiveViewer(
+                                              minScale: 0.5,
+                                              maxScale: 4,
+                                              child: Image.network(
+                                                '$baseUrl/payment-proof/${_payment!['payment_proof']}',
+                                                fit: BoxFit.contain,
+                                              ),
+                                            ),
+                                          ),
+                                        );
+                                      },
+                                      child: ClipRRect(
+                                        borderRadius: BorderRadius.circular(8),
+                                        child: Image.network(
+                                          '$baseUrl/payment-proof/${_payment!['payment_proof']}',
                                           width: 60,
                                           height: 60,
-                                          color: Colors.grey.shade200,
-                                          child: const Icon(
-                                            Icons.image,
-                                            color: AppColors.textGrey,
-                                          ),
+                                          fit: BoxFit.cover,
+                                          errorBuilder: (_, __, ___) =>
+                                              Container(
+                                                width: 60,
+                                                height: 60,
+                                                color: Colors.grey.shade200,
+                                                child: const Icon(
+                                                  Icons.image,
+                                                  color: AppColors.textGrey,
+                                                ),
+                                              ),
                                         ),
                                       ),
                                     ),
@@ -509,7 +571,7 @@ class _DetailBillViewState extends State<DetailBillView> {
                                             CrossAxisAlignment.start,
                                         children: [
                                           Text(
-                                            _payment!['proof_image'] ?? '',
+                                            _payment!['payment_proof'] ?? '',
                                             style: const TextStyle(
                                               fontSize: 12,
                                               fontWeight: FontWeight.w500,
@@ -525,9 +587,42 @@ class _DetailBillViewState extends State<DetailBillView> {
                                         ],
                                       ),
                                     ),
-                                    const Icon(
-                                      Icons.remove_red_eye_outlined,
-                                      color: AppColors.textDark,
+                                    IconButton(
+                                      icon: const Icon(
+                                        Icons.remove_red_eye_outlined,
+                                        color: AppColors.textDark,
+                                      ),
+                                      onPressed: () {
+                                        showDialog(
+                                          context: context,
+                                          builder: (_) => Dialog(
+                                            backgroundColor: Colors.black,
+                                            insetPadding: const EdgeInsets.all(
+                                              10,
+                                            ),
+                                            child: InteractiveViewer(
+                                              minScale: 0.5,
+                                              maxScale: 4,
+                                              child: Image.network(
+                                                '$baseUrl/payment-proof/${_payment!['payment_proof']}',
+                                                fit: BoxFit.contain,
+                                                errorBuilder: (_, __, ___) =>
+                                                    const Padding(
+                                                      padding: EdgeInsets.all(
+                                                        20,
+                                                      ),
+                                                      child: Text(
+                                                        'Gagal memuat gambar',
+                                                        style: TextStyle(
+                                                          color: Colors.white,
+                                                        ),
+                                                      ),
+                                                    ),
+                                              ),
+                                            ),
+                                          ),
+                                        );
+                                      },
                                     ),
                                   ],
                                 ),
@@ -594,25 +689,21 @@ class _DetailBillViewState extends State<DetailBillView> {
                               ),
                             ),
                           ],
-                        ):
-                        OutlinedButton(
-  onPressed: () => Navigator.pop(context),
-  style: OutlinedButton.styleFrom(
-    minimumSize: const Size(double.infinity, 50),
-    side: const BorderSide(
-      color: AppColors.primary,
-    ),
-    shape: RoundedRectangleBorder(
-      borderRadius: BorderRadius.circular(12),
-    ),
-  ),
-  child: const Text(
-    'Kembali',
-    style: TextStyle(
-      color: AppColors.primary,
-    ),
-  ),
-)
+                        )
+                      : OutlinedButton(
+                          onPressed: () => Navigator.pop(context),
+                          style: OutlinedButton.styleFrom(
+                            minimumSize: const Size(double.infinity, 50),
+                            side: const BorderSide(color: AppColors.primary),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                          child: const Text(
+                            'Kembali',
+                            style: TextStyle(color: AppColors.primary),
+                          ),
+                        ),
                 ),
               ],
             ),

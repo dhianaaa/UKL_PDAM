@@ -70,22 +70,35 @@ class ActivityService {
     final List list = body is List ? body : (body['data'] ?? body['payments'] ?? []);
 
     return list.map<ActivityItem>((p) {
-      final date =
-          DateTime.tryParse(p['created_at'] ?? p['createdAt'] ?? '') ?? DateTime.now();
-      final invoice =
-          p['invoice_number'] ?? p['invoice'] ?? p['code'] ?? 'INV-${p['id']}';
-      final verified = p['is_verified'] == true ||
-          p['status'] == 'verified' ||
-          p['verified_at'] != null;
+  final date =
+      DateTime.tryParse(
+        p['created_at'] ??
+        p['createdAt'] ??
+        p['payment_date'] ??
+        '',
+      ) ??
+      DateTime.now();
 
-      return ActivityItem(
-        type: 'payment',
-        title: 'Pembayaran baru',
-        subtitle: invoice,
-        status: verified ? 'verified' : 'unverified',
-        createdAt: date,
-      );
-    }).toList();
+  final invoice =
+      p['invoice_number'] ??
+      p['invoice'] ??
+      p['code'] ??
+      'INV-${p['id']}';
+
+  final verified =
+      p['verified_payment'] == true ||
+      p['verified'] == true ||
+      (p['payments'] != null &&
+          p['payments']['verified'] == true);
+
+  return ActivityItem(
+    type: 'payment',
+    title: 'Pembayaran baru',
+    subtitle: invoice,
+    status: verified ? 'verified' : 'unverified',
+    createdAt: date,
+  );
+}).toList();
   }
 
   Future<List<ActivityItem>> fetchCustomers() async {
