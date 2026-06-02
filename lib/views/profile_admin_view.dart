@@ -1,4 +1,5 @@
-import 'package:amerta_pay/views/admin_service.dart';
+
+import 'package:amerta_pay/services/admin_service.dart';
 import 'package:flutter/material.dart';
 import '../models/auth_model.dart';
 import '../widgets/bottom_nav.dart';
@@ -14,17 +15,17 @@ class ProfileAdminView extends StatefulWidget {
 class _ProfileAdminViewState extends State<ProfileAdminView> {
   final AdminService _adminSvc = AdminService();
 
-  int?    _adminId;
-  String  _name     = '';
-  String  _username = '';
-  String  _role     = 'ADMIN';
-  String  _phone    = '';
-  String  _token    = '';
-  bool    _loading  = true;
-  bool    _showToken = false;
+  int? _adminId;
+  String _name = '';
+  String _username = '';
+  String _role = 'ADMIN';
+  String _phone = '';
+  String _token = '';
+  bool _loading = true;
+  bool _showToken = false;
 
   static const _teal = Color(0xFF26C6A6);
-  static const _bg   = Color(0xFFF0F4F8);
+  static const _bg = Color(0xFFF0F4F8);
 
   @override
   void initState() {
@@ -36,16 +37,16 @@ class _ProfileAdminViewState extends State<ProfileAdminView> {
     setState(() => _loading = true);
     try {
       final auth = await AuthModel.getFromPrefs();
-      _adminId  = auth.id;
-      _token    = auth.token ?? '';
+      _adminId = auth.id;
+      _token = auth.token ?? '';
 
       final result = await _adminSvc.getMe();
       if (result.status && result.data != null) {
         final data = result.data!;
-        _name     = data['name']     ?? auth.name ?? '';
+        _name = data['name'] ?? auth.name ?? '';
         _username = data['username'] ?? auth.username ?? '';
-        _role     = data['role']     ?? 'ADMIN';
-        _phone    = data['phone']    ?? '';
+        _role = data['role'] ?? 'ADMIN';
+        _phone = data['phone'] ?? '';
       }
     } catch (e) {
       if (mounted) AlertMessage.show(context, 'Gagal memuat profil', false);
@@ -57,10 +58,11 @@ class _ProfileAdminViewState extends State<ProfileAdminView> {
     final confirm = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        shape:
-            RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Text('Logout',
-            style: TextStyle(fontWeight: FontWeight.w700)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Text(
+          'Logout',
+          style: TextStyle(fontWeight: FontWeight.w700),
+        ),
         content: const Text('Apakah kamu yakin ingin keluar?'),
         actions: [
           TextButton(
@@ -72,7 +74,8 @@ class _ProfileAdminViewState extends State<ProfileAdminView> {
               backgroundColor: Colors.red,
               foregroundColor: Colors.white,
               shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10)),
+                borderRadius: BorderRadius.circular(10),
+              ),
             ),
             onPressed: () => Navigator.pop(ctx, true),
             child: const Text('Logout'),
@@ -82,10 +85,16 @@ class _ProfileAdminViewState extends State<ProfileAdminView> {
     );
 
     if (confirm != true || !mounted) return;
+
     await AuthModel.clearPrefs();
-    if (mounted) {
-      Navigator.pushReplacementNamed(context, '/');
-    }
+
+    if (!mounted) return;
+
+    Navigator.pushNamedAndRemoveUntil(
+      context,
+      '/role-picker',
+      (route) => false,
+    );
   }
 
   @override
@@ -95,7 +104,8 @@ class _ProfileAdminViewState extends State<ProfileAdminView> {
       body: SafeArea(
         child: _loading
             ? const Center(
-                child: CircularProgressIndicator(color: Color(0xFF26C6A6)))
+                child: CircularProgressIndicator(color: Color(0xFF26C6A6)),
+              )
             : SingleChildScrollView(
                 padding: const EdgeInsets.all(20),
                 child: Column(
@@ -113,8 +123,11 @@ class _ProfileAdminViewState extends State<ProfileAdminView> {
                               color: _teal,
                               borderRadius: BorderRadius.circular(12),
                             ),
-                            child: const Icon(Icons.arrow_back_ios_new_rounded,
-                                color: Colors.white, size: 18),
+                            child: const Icon(
+                              Icons.arrow_back_ios_new_rounded,
+                              color: Colors.white,
+                              size: 18,
+                            ),
                           ),
                         ),
                         const Spacer(),
@@ -128,8 +141,11 @@ class _ProfileAdminViewState extends State<ProfileAdminView> {
                                 color: Colors.grey.shade200,
                                 shape: BoxShape.circle,
                               ),
-                              child: Icon(Icons.person_rounded,
-                                  size: 48, color: Colors.grey.shade500),
+                              child: Icon(
+                                Icons.person_rounded,
+                                size: 48,
+                                color: Colors.grey.shade500,
+                              ),
                             ),
                             Positioned(
                               right: 0,
@@ -141,10 +157,15 @@ class _ProfileAdminViewState extends State<ProfileAdminView> {
                                   color: _teal,
                                   shape: BoxShape.circle,
                                   border: Border.all(
-                                      color: Colors.white, width: 2),
+                                    color: Colors.white,
+                                    width: 2,
+                                  ),
                                 ),
-                                child: const Icon(Icons.edit_rounded,
-                                    color: Colors.white, size: 14),
+                                child: const Icon(
+                                  Icons.edit_rounded,
+                                  color: Colors.white,
+                                  size: 14,
+                                ),
                               ),
                             ),
                           ],
@@ -158,27 +179,29 @@ class _ProfileAdminViewState extends State<ProfileAdminView> {
 
                     // ── Fields ─────────────────────────────────
                     _ProfileField(
-                        label: 'Nama Lengkap',
-                        value: _name,
-                        icon: Icons.person_outline_rounded),
+                      label: 'Nama Lengkap',
+                      value: _name,
+                      icon: Icons.person_outline_rounded,
+                    ),
                     const SizedBox(height: 14),
                     _ProfileField(
-                        label: 'Username',
-                        value: _username,
-                        icon: Icons.person_outline_rounded),
+                      label: 'Username',
+                      value: _username,
+                      icon: Icons.person_outline_rounded,
+                    ),
                     const SizedBox(height: 14),
                     _ProfileField(
-                        label: 'Role',
-                        value: _role,
-                        icon: Icons.person_outline_rounded),
+                      label: 'Role',
+                      value: _role,
+                      icon: Icons.person_outline_rounded,
+                    ),
                     const SizedBox(height: 14),
 
                     // Token (obscured with toggle)
                     _TokenField(
                       token: _token,
                       show: _showToken,
-                      onToggle: () =>
-                          setState(() => _showToken = !_showToken),
+                      onToggle: () => setState(() => _showToken = !_showToken),
                     ),
                     const SizedBox(height: 14),
 
@@ -227,19 +250,25 @@ class _ProfileField extends StatelessWidget {
   final String value;
   final IconData icon;
 
-  const _ProfileField(
-      {required this.label, required this.value, required this.icon});
+  const _ProfileField({
+    required this.label,
+    required this.value,
+    required this.icon,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label,
-            style: const TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-                color: Color(0xFF1A202C))),
+        Text(
+          label,
+          style: const TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.w600,
+            color: Color(0xFF1A202C),
+          ),
+        ),
         const SizedBox(height: 8),
         Container(
           width: double.infinity,
@@ -253,9 +282,10 @@ class _ProfileField extends StatelessWidget {
             children: [
               Icon(icon, color: Colors.grey.shade400, size: 20),
               const SizedBox(width: 12),
-              Text(value,
-                  style: const TextStyle(
-                      fontSize: 14, color: Color(0xFF1A202C))),
+              Text(
+                value,
+                style: const TextStyle(fontSize: 14, color: Color(0xFF1A202C)),
+              ),
             ],
           ),
         ),
@@ -270,8 +300,11 @@ class _TokenField extends StatelessWidget {
   final bool show;
   final VoidCallback onToggle;
 
-  const _TokenField(
-      {required this.token, required this.show, required this.onToggle});
+  const _TokenField({
+    required this.token,
+    required this.show,
+    required this.onToggle,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -282,11 +315,14 @@ class _TokenField extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text('Owner Token',
-            style: TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-                color: Color(0xFF1A202C))),
+        const Text(
+          'Owner Token',
+          style: TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.w600,
+            color: Color(0xFF1A202C),
+          ),
+        ),
         const SizedBox(height: 8),
         Container(
           width: double.infinity,
@@ -301,9 +337,13 @@ class _TokenField extends StatelessWidget {
               const Icon(Icons.key_rounded, color: Color(0xFF9E9E9E), size: 20),
               const SizedBox(width: 12),
               Expanded(
-                child: Text(display,
-                    style: const TextStyle(
-                        fontSize: 14, color: Color(0xFF1A202C))),
+                child: Text(
+                  display,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    color: Color(0xFF1A202C),
+                  ),
+                ),
               ),
               GestureDetector(
                 onTap: onToggle,
@@ -333,19 +373,21 @@ class _PhoneField extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text('Phone Number',
-            style: TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-                color: Color(0xFF1A202C))),
+        const Text(
+          'Phone Number',
+          style: TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.w600,
+            color: Color(0xFF1A202C),
+          ),
+        ),
         const SizedBox(height: 8),
         Row(
           children: [
             // Country code
             Container(
               width: 72,
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
               decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(14),
@@ -355,8 +397,11 @@ class _PhoneField extends StatelessWidget {
                 children: [
                   const Text('🇮🇩', style: TextStyle(fontSize: 16)),
                   const SizedBox(width: 4),
-                  Icon(Icons.arrow_drop_down_rounded,
-                      color: Colors.grey.shade500, size: 18),
+                  Icon(
+                    Icons.arrow_drop_down_rounded,
+                    color: Colors.grey.shade500,
+                    size: 18,
+                  ),
                 ],
               ),
             ),
@@ -365,7 +410,9 @@ class _PhoneField extends StatelessWidget {
             Expanded(
               child: Container(
                 padding: const EdgeInsets.symmetric(
-                    horizontal: 16, vertical: 16),
+                  horizontal: 16,
+                  vertical: 16,
+                ),
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(14),
@@ -374,7 +421,9 @@ class _PhoneField extends StatelessWidget {
                 child: Text(
                   phone.isEmpty ? '-' : phone,
                   style: const TextStyle(
-                      fontSize: 14, color: Color(0xFF1A202C)),
+                    fontSize: 14,
+                    color: Color(0xFF1A202C),
+                  ),
                 ),
               ),
             ),

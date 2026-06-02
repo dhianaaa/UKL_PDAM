@@ -81,16 +81,10 @@ class _ContactAdminViewState extends State<ContactAdminView>
                   child: Row(
                     children: [
                       Container(
-                        width: 52,
-                        height: 52,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          gradient: const LinearGradient(
-                            colors: [Color(0xFF26C6A6), Color(0xFF72D8EF)],
-                          ),
-                        ),
-                        child: const Icon(Icons.admin_panel_settings_rounded,
-                            color: Colors.white, size: 26),
+                        width: 75,
+                        height: 75,
+                    
+                        child: Image.asset('assets/admin.png', width: 75, height: 75),
                       ),
                       const SizedBox(width: 14),
                       Expanded(

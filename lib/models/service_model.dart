@@ -37,8 +37,8 @@ class ServiceModel {
           ? int.tryParse(json['price']) ?? 0
           : (json['price'] ?? 0),
 
-      createdAt: json['created_at'],
-      updatedAt: json['updated_at'],
+      createdAt: json['created_at']?.toString() ?? json['createdAt']?.toString(),
+updatedAt: json['updated_at']?.toString() ?? json['updatedAt']?.toString(),
     );
   }
 

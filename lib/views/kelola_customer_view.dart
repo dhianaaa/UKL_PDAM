@@ -80,7 +80,7 @@ class _KelolaCustomerViewState extends State<KelolaCustomerView> {
               padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
               child: Column(
                 children: [
-                  const Text('Kelola layanan', style: AppTextStyles.heading),
+                  const Text('Kelola Customer', style: AppTextStyles.heading),
                   const SizedBox(height: 16),
                   Row(
                     children: [

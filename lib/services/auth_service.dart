@@ -1,13 +1,12 @@
 import 'dart:convert';
-import 'package:amerta_pay/models/response_data_map.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
-import '../models/auth_model.dart';
+import '../models/user_login.dart';
+import '../models/response_data_map.dart';
 import 'url.dart';
 
 class AuthService {
-
   // ==========================================================
   // LOGIN
   // ==========================================================
@@ -32,56 +31,74 @@ class AuthService {
 
       var body = jsonDecode(response.body);
 
-      if ((response.statusCode == 201 ||
+      if ((response.statusCode == 200 ||
               response.statusCode == 201) &&
           (body['token'] != null ||
               body['data']?['token'] != null)) {
-        String role = body['data']?['role'] ??
+        String role =
+            body['data']?['role'] ??
             body['role'] ??
             '';
 
-        String token = body['token'] ??
+        String token =
+            body['token'] ??
             body['data']?['token'] ??
             '';
 
-        int id = body['data']?['id'] ?? 0;
+        int id =
+            body['data']?['id'] ??
+            body['id'] ??
+            0;
 
         String nama =
             body['data']?['name'] ??
-                body['data']?['username'] ??
-                username;
+            body['data']?['username'] ??
+            username;
 
         String uname =
             body['data']?['username'] ??
-                username;
+            username;
 
-        // Simpan ke AuthModel
-        AuthModel authModel = AuthModel(
+        // Simpan ke UserLogin
+        UserLogin userLogin = UserLogin(
           status: true,
           token: token,
-          message: body['message'] ?? 'Login berhasil',
+          message:
+              body['message'] ??
+              'Login berhasil',
           id: id,
           name: nama,
           username: uname,
           role: role,
         );
 
-        await authModel.saveToPrefs();
+        await userLogin.prefs();
 
-        // Simpan manual ke SharedPreferences
+        // Simpan manual seperti project acuan
         final prefs =
             await SharedPreferences.getInstance();
 
-        await prefs.setString('token', token);
-        await prefs.setString('role', role);
+        await prefs.setString(
+          'token',
+          token,
+        );
+
+        await prefs.setString(
+          'role',
+          role,
+        );
+
         await prefs.setString(
           'user_data',
-          jsonEncode(body['data'] ?? {}),
+          jsonEncode(
+            body['data'] ?? {},
+          ),
         );
 
         return ResponseDataMap(
           status: true,
-          message: body['message'] ??
+          message:
+              body['message'] ??
               'Login berhasil',
           data: body,
         );
@@ -89,7 +106,8 @@ class AuthService {
 
       return ResponseDataMap(
         status: false,
-        message: body['message'] ??
+        message:
+            body['message'] ??
             'Username atau password salah',
       );
     } catch (e) {
@@ -107,6 +125,7 @@ class AuthService {
   Future<String?> getToken() async {
     final prefs =
         await SharedPreferences.getInstance();
+
     return prefs.getString('token');
   }
 
@@ -115,6 +134,7 @@ class AuthService {
   // ==========================================================
   Future<bool> isLoggedIn() async {
     final token = await getToken();
+
     return token != null &&
         token.isNotEmpty;
   }
@@ -123,6 +143,8 @@ class AuthService {
   // LOGOUT
   // ==========================================================
   Future<void> logout() async {
+    await UserLogin().logout();
+
     final prefs =
         await SharedPreferences.getInstance();
 
@@ -173,11 +195,11 @@ class AuthService {
 
       var body = jsonDecode(response.body);
 
-      if (response.statusCode == 201 ||
-          response.statusCode == 201) {
+      if (response.statusCode == 201) {
         return ResponseDataMap(
           status: true,
-          message: body['message'] ??
+          message:
+              body['message'] ??
               'Registrasi admin berhasil',
           data: body,
         );
@@ -186,7 +208,8 @@ class AuthService {
       return ResponseDataMap(
         status: false,
         message:
-            body['message'] ?? 'Registrasi gagal',
+            body['message'] ??
+            'Registrasi gagal',
       );
     } catch (e) {
       return ResponseDataMap(
@@ -235,11 +258,11 @@ class AuthService {
 
       var body = jsonDecode(response.body);
 
-      if (response.statusCode == 201 ||
-          response.statusCode == 201) {
+      if (response.statusCode == 201) {
         return ResponseDataMap(
           status: true,
-          message: body['message'] ??
+          message:
+              body['message'] ??
               'Customer berhasil didaftarkan',
           data: body,
         );
@@ -247,7 +270,8 @@ class AuthService {
 
       return ResponseDataMap(
         status: false,
-        message: body['message'] ??
+        message:
+            body['message'] ??
             'Registrasi customer gagal',
       );
     } catch (e) {

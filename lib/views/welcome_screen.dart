@@ -15,29 +15,35 @@ class _WelcomeViewState extends State<WelcomeView>
   late Animation<double> _fadeAnim;
   late Animation<Offset> _slideAnim;
 
-  @override
-  void initState() {
-    super.initState();
+ @override
+void initState() {
+  super.initState();
 
-    _contentCtrl = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 900),
-    );
+  _contentCtrl = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 900),
+  );
 
-    _fadeAnim =
-        CurvedAnimation(parent: _contentCtrl, curve: Curves.easeOut);
+  _fadeAnim =
+      CurvedAnimation(parent: _contentCtrl, curve: Curves.easeOut);
 
-    _slideAnim = Tween<Offset>(
-      begin: const Offset(0, 0.12),
-      end: Offset.zero,
-    ).animate(CurvedAnimation(parent: _contentCtrl, curve: Curves.easeOutCubic));
+  _slideAnim = Tween<Offset>(
+    begin: const Offset(0, 0.12),
+    end: Offset.zero,
+  ).animate(
+    CurvedAnimation(
+      parent: _contentCtrl,
+      curve: Curves.easeOutCubic,
+    ),
+  );
 
-    Future.delayed(const Duration(milliseconds: 300), () {
-      _contentCtrl.forward();
-    });
+  Future.delayed(const Duration(milliseconds: 300), () {
+    _contentCtrl.forward();
+  });
 
-    _checkAutoLogin();
-  }
+  // MATIKAN INI BIAR TIDAK LANGSUNG MASUK DASHBOARD
+  // _checkAutoLogin();
+}
 
   Future<void> _checkAutoLogin() async {
     bool loggedIn = await AuthModel.isLoggedIn();

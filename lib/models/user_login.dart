@@ -1,7 +1,6 @@
 import 'package:shared_preferences/shared_preferences.dart';
 
 class UserLogin {
-
   bool? status;
   String? token;
   String? message;
@@ -21,29 +20,27 @@ class UserLogin {
   });
 
   // SIMPAN SESSION LOGIN
-  Future prefs() async {
-
+  Future<void> prefs() async {
     SharedPreferences prefs =
         await SharedPreferences.getInstance();
 
-    prefs.setBool("status", status ?? false);
+    await prefs.setBool("status", status ?? false);
 
-    prefs.setString("token", token ?? "");
+    await prefs.setString("token", token ?? "");
 
-    prefs.setString("message", message ?? "");
+    await prefs.setString("message", message ?? "");
 
-    prefs.setInt("id", id ?? 0);
+    await prefs.setInt("id", id ?? 0);
 
-    prefs.setString("username", username ?? "");
+    await prefs.setString("username", username ?? "");
 
-    prefs.setString("role", role ?? "");
+    await prefs.setString("role", role ?? "");
 
-    prefs.setString("name", name ?? "");
+    await prefs.setString("name", name ?? "");
   }
 
   // AMBIL DATA LOGIN
-  Future getUserLogin() async {
-
+  Future<UserLogin> getUserLogin() async {
     SharedPreferences prefs =
         await SharedPreferences.getInstance();
 
@@ -61,8 +58,7 @@ class UserLogin {
   }
 
   // LOGOUT
-  Future logout() async {
-
+  Future<void> logout() async {
     SharedPreferences prefs =
         await SharedPreferences.getInstance();
 

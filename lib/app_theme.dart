@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 
 class AppColors {
-  static const Color primary = Color(0xFF2DB89B);    // Teal/hijau utama
+  static const Color primary = Color(0xFF2DB89B); 
+  static const Color primaryDark = Color(0xFF1A9B80);     
   static const Color primaryLight = Color(0xFFE8F8F5);
   static const Color background = Color(0xFFF0F4F8);
   static const Color white = Colors.white;
@@ -11,6 +12,11 @@ class AppColors {
   static const Color statusBelumDiverifikasi = Color(0xFFFFB347);
   static const Color statusDibayar = Color(0xFF4CAF50);
   static const Color danger = Color(0xFFE53935);
+  static const Color dangerLight = Color(0xFFFFEBEE);       
+  static const Color warning = Color(0xFFFF8F00);           
+  static const Color warningLight = Color(0xFFFFF3E0);      
+  static const Color success = Color(0xFF4CAF50);           
+  static const Color successLight = Color(0xFFE8F5E9);      
   static const Color cardBg = Colors.white;
 }
 

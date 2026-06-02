@@ -1,4 +1,5 @@
 import 'package:amerta_pay/app_theme.dart';
+import 'package:amerta_pay/services/customer_service.dart';
 import 'package:amerta_pay/services/url.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -18,6 +19,8 @@ class _DetailBillViewState extends State<DetailBillView> {
   bool _loading = true;
   final BillService _billService = BillService();
   final PaymentService _paymentService = PaymentService();
+  final CustomerService _customerService = CustomerService();
+String _serviceNameFromCustomer = '-';
 
   @override
   void initState() {
@@ -44,13 +47,52 @@ class _DetailBillViewState extends State<DetailBillView> {
   }
 
   String get _status {
-    final paid = _billData?['paid'] == true;
-    final verified = _billData?['verified_payment'] == true;
+  final paid = _billData?['paid'] == true;
+  final verified = _billData?['verified_payment'] == true;
 
-    if (!paid) return 'belum_dibayar';
-    if (!verified) return 'belum_diverifikasi';
+  final paymentStatus = (_payment?['status'] ?? _billData?['payment_status'])
+      ?.toString()
+      .toUpperCase()
+      .replaceAll(' ', '_');
+
+  // 1. Kalau payment ditolak, status bill balik jadi belum dibayar
+  if (paymentStatus == 'REJECTED' ||
+      paymentStatus == 'DITOLAK' ||
+      paymentStatus == 'FAILED' ||
+      paymentStatus == 'CANCELED' ||
+      paymentStatus == 'CANCELLED' ||
+      paymentStatus == 'DECLINED' ||
+      paymentStatus == 'DENIED') {
+    return 'belum_dibayar';
+  }
+
+  // 2. Kalau sudah diverifikasi/lunas
+  if (verified ||
+      paymentStatus == 'VERIFIED' ||
+      paymentStatus == 'SUCCESS' ||
+      paymentStatus == 'LUNAS' ||
+      paymentStatus == 'PAID' ||
+      paymentStatus == 'APPROVED') {
     return 'lunas';
   }
+
+  // 3. Kalau customer sudah upload bukti, harus jadi Menunggu Verifikasi
+  // Ini wajib sebelum pengecekan !paid
+  if (paymentStatus == 'PENDING' ||
+      paymentStatus == 'WAITING' ||
+      paymentStatus == 'BELUM_DIVERIFIKASI' ||
+      paymentStatus == 'MENUNGGU_VERIFIKASI' ||
+      paymentStatus == 'UNVERIFIED') {
+    return 'belum_diverifikasi';
+  }
+
+  // 4. Fallback kalau backend set paid=true tapi verified=false
+  if (paid && !verified) {
+    return 'belum_diverifikasi';
+  }
+
+  return 'belum_dibayar';
+}
 
   Map<String, dynamic>? get _payment {
     final p = _billData?['payments'];
@@ -59,10 +101,77 @@ class _DetailBillViewState extends State<DetailBillView> {
       return p;
     }
 
+    if (p is List && p.isNotEmpty) {
+      final payments = p
+          .whereType<Map>()
+          .map((e) => Map<String, dynamic>.from(e))
+          .toList();
+
+      if (payments.isEmpty) return null;
+
+      payments.sort((a, b) {
+        final aId = int.tryParse(a['id']?.toString() ?? '0') ?? 0;
+        final bId = int.tryParse(b['id']?.toString() ?? '0') ?? 0;
+        return bId.compareTo(aId);
+      });
+
+      return payments.first;
+    }
+
     return null;
   }
 
   int? get _paymentId => _payment?['id'];
+  String get _serviceName {
+  final customer = _billData?['customer'];
+  final service = _billData?['service'];
+
+  if (service is Map) {
+    final name = service['name'] ??
+        service['service_name'] ??
+        service['title'] ??
+        service['type'];
+
+    if (name != null && name.toString().trim().isNotEmpty) {
+      return name.toString();
+    }
+  }
+
+  if (customer is Map) {
+    final customerService = customer['service'];
+
+    if (customerService is Map) {
+      final name = customerService['name'] ??
+          customerService['service_name'] ??
+          customerService['title'] ??
+          customerService['type'];
+
+      if (name != null && name.toString().trim().isNotEmpty) {
+        return name.toString();
+      }
+    }
+
+    final directName = customer['service_name'] ??
+        customer['serviceName'] ??
+        customer['layanan'] ??
+        customer['service_type'];
+
+    if (directName != null && directName.toString().trim().isNotEmpty) {
+      return directName.toString();
+    }
+  }
+
+  final rootName = _billData?['service_name'] ??
+      _billData?['serviceName'] ??
+      _billData?['layanan'] ??
+      _billData?['service_type'];
+
+  if (rootName != null && rootName.toString().trim().isNotEmpty) {
+    return rootName.toString();
+  }
+
+  return '-';
+}
 
   String _formatCurrency(dynamic val) {
     if (val == null) return '-';
@@ -123,7 +232,12 @@ class _DetailBillViewState extends State<DetailBillView> {
               ),
             ),
             const SizedBox(width: 8),
-            const Icon(Icons.water_drop, color: AppColors.primary, size: 48),
+            Image.asset(
+              'assets/bayar.png',
+              width: 48,
+              height: 48,
+              fit: BoxFit.contain,
+            ),
           ],
         ),
         actionsAlignment: MainAxisAlignment.spaceEvenly,
@@ -179,6 +293,32 @@ class _DetailBillViewState extends State<DetailBillView> {
     }
   }
 
+  String get _statusLabel {
+    switch (_status) {
+      case 'belum_dibayar':
+        return 'Belum Dibayar';
+      case 'belum_diverifikasi':
+        return 'Menunggu Verifikasi';
+      case 'lunas':
+        return 'Lunas';
+      default:
+        return _status;
+    }
+  }
+
+  Color get _statusBadgeColor {
+    switch (_status) {
+      case 'belum_dibayar':
+        return AppColors.danger;
+      case 'belum_diverifikasi':
+        return AppColors.statusBelumDiverifikasi;
+      case 'lunas':
+        return AppColors.statusDibayar;
+      default:
+        return AppColors.textGrey;
+    }
+  }
+
   Future<void> _showRejectDialog() async {
     final confirm = await showDialog<bool>(
       context: context,
@@ -206,10 +346,11 @@ class _DetailBillViewState extends State<DetailBillView> {
               ),
             ),
             const SizedBox(width: 8),
-            const Icon(
-              Icons.water_drop,
-              color: AppColors.statusBelumDibayar,
-              size: 48,
+            Image.asset(
+              'assets/bayar.png',
+              width: 48,
+              height: 48,
+              fit: BoxFit.contain,
             ),
           ],
         ),
@@ -219,14 +360,14 @@ class _DetailBillViewState extends State<DetailBillView> {
             child: OutlinedButton(
               onPressed: () => Navigator.pop(context, false),
               style: OutlinedButton.styleFrom(
-                side: const BorderSide(color: AppColors.danger),
+                side: const BorderSide(color: AppColors.textGrey),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(10),
                 ),
               ),
               child: const Text(
-                'Tolak',
-                style: TextStyle(color: AppColors.danger),
+                'Batal',
+                style: TextStyle(color: AppColors.textGrey),
               ),
             ),
           ),
@@ -235,20 +376,18 @@ class _DetailBillViewState extends State<DetailBillView> {
             child: ElevatedButton(
               onPressed: () => Navigator.pop(context, true),
               style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
+                backgroundColor: AppColors.danger,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(10),
                 ),
               ),
-              child: const Text(
-                'Verifikasi',
-                style: TextStyle(color: Colors.white),
-              ),
+              child: const Text('Tolak', style: TextStyle(color: Colors.white)),
             ),
           ),
         ],
       ),
     );
+
     if (confirm == true && _paymentId != null) {
       final r = await _paymentService.reject(_paymentId!);
 
@@ -354,16 +493,15 @@ class _DetailBillViewState extends State<DetailBillView> {
                                   vertical: 6,
                                 ),
                                 decoration: BoxDecoration(
-                                  color: AppColors.statusBelumDiverifikasi
-                                      .withOpacity(0.2),
+                                  color: _statusBadgeColor.withOpacity(0.15),
                                   borderRadius: BorderRadius.circular(20),
                                 ),
                                 child: Text(
-                                  _status,
-                                  style: const TextStyle(
+                                  _statusLabel,
+                                  style: TextStyle(
                                     fontSize: 12,
                                     fontWeight: FontWeight.w600,
-                                    color: AppColors.textDark,
+                                    color: _statusBadgeColor,
                                   ),
                                 ),
                               ),
@@ -395,11 +533,17 @@ class _DetailBillViewState extends State<DetailBillView> {
                                   style: TextStyle(color: AppColors.textGrey),
                                 ),
                                 const Spacer(),
-                                Text(
-                                  _billData!['service']?['name'] ??
-                                      '-'
-                                          '-',
+                                Text(_serviceName),
+                              ],
+                            ),
+                            Row(
+                              children: [
+                                const Text(
+                                  'Pemakaian Air',
+                                  style: TextStyle(color: AppColors.textGrey),
                                 ),
+                                const Spacer(),
+                                Text('${_billData!['usage_value'] ?? '-'}m³'),
                               ],
                             ),
                             Row(

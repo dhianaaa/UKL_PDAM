@@ -19,15 +19,23 @@ class AdminService {
   Future<ResponseDataMap> getMe() async {
     try {
       final headers = await _headers();
-      final res =
-          await http.get(Uri.parse('$baseUrl/admins/me'), headers: headers);
+      final res = await http.get(
+        Uri.parse('$baseUrl/admins/me'),
+        headers: headers,
+      );
       final body = jsonDecode(res.body);
 
       if (res.statusCode == 200) {
-        return ResponseDataMap(status: true, message: 'OK', data: body['data'] ?? body);
+        return ResponseDataMap(
+          status: true,
+          message: 'OK',
+          data: body['data'] ?? body,
+        );
       }
       return ResponseDataMap(
-          status: false, message: body['message'] ?? 'Gagal memuat profil');
+        status: false,
+        message: body['message'] ?? 'Gagal memuat profil',
+      );
     } catch (e) {
       return ResponseDataMap(status: false, message: 'Koneksi gagal: $e');
     }
@@ -40,25 +48,30 @@ class AdminService {
 
       // Total customers
       final custRes = await http.get(
-          Uri.parse('$baseUrl/customers?page=1&quantity=1'),
-          headers: headers);
+        Uri.parse('$baseUrl/customers?page=1&quantity=1'),
+        headers: headers,
+      );
       final custBody = jsonDecode(custRes.body);
-      final totalCustomer = custBody['total'] ?? custBody['meta']?['total'] ?? 0;
+      final totalCustomer =
+          custBody['total'] ?? custBody['meta']?['total'] ?? 0;
 
       // Services
       final svcRes = await http.get(
-          Uri.parse('$baseUrl/services'), headers: headers);
+        Uri.parse('$baseUrl/services'),
+        headers: headers,
+      );
       final svcBody = jsonDecode(svcRes.body);
       final List svcList = svcBody['data'] ?? [];
 
       // Bills (unverified payments)
       final billRes = await http.get(
-          Uri.parse('$baseUrl/bills?page=1&quantity=100'),
-          headers: headers);
+        Uri.parse('$baseUrl/bills?page=1&quantity=100'),
+        headers: headers,
+      );
       final billBody = jsonDecode(billRes.body);
       final List billList = billBody['data'] ?? [];
       final unverified = billList
-          .where((b) => b['status'] == false || b['status'] == 'BELUM')
+          .where((b) => b['paid'] == true && b['verified_payment'] == false)
           .length;
 
       return ResponseDataMap(
@@ -73,7 +86,10 @@ class AdminService {
         },
       );
     } catch (e) {
-      return ResponseDataMap(status: false, message: 'Gagal memuat dashboard: $e');
+      return ResponseDataMap(
+        status: false,
+        message: 'Gagal memuat dashboard: $e',
+      );
     }
   }
 
@@ -82,8 +98,9 @@ class AdminService {
     try {
       final headers = await _headers();
       final res = await http.get(
-          Uri.parse('$baseUrl/customers?page=1&quantity=5'),
-          headers: headers);
+        Uri.parse('$baseUrl/customers?page=1&quantity=5'),
+        headers: headers,
+      );
       final body = jsonDecode(res.body);
       return body['data'] ?? [];
     } catch (_) {
@@ -103,7 +120,8 @@ class AdminService {
       final Map<String, dynamic> payload = {};
       if (name != null && name.isNotEmpty) payload['name'] = name;
       if (phone != null && phone.isNotEmpty) payload['phone'] = phone;
-      if (password != null && password.isNotEmpty) payload['password'] = password;
+      if (password != null && password.isNotEmpty)
+        payload['password'] = password;
 
       final res = await http.patch(
         Uri.parse('$baseUrl/admins/$id'),
@@ -114,12 +132,15 @@ class AdminService {
 
       if (res.statusCode == 200) {
         return ResponseDataMap(
-            status: true,
-            message: body['message'] ?? 'Profil berhasil diupdate',
-            data: body);
+          status: true,
+          message: body['message'] ?? 'Profil berhasil diupdate',
+          data: body,
+        );
       }
       return ResponseDataMap(
-          status: false, message: body['message'] ?? 'Gagal update');
+        status: false,
+        message: body['message'] ?? 'Gagal update',
+      );
     } catch (e) {
       return ResponseDataMap(status: false, message: 'Koneksi gagal: $e');
     }

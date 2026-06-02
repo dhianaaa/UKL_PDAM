@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:amerta_pay/models/response_data_list.dart';
 import 'package:amerta_pay/models/response_data_map.dart';
 import 'package:http/http.dart' as http;
 import '../models/service_model.dart';
@@ -37,24 +38,37 @@ class ServiceService {
 
   // ── GET BY ID  GET /services/:id ─────────────────────────────
   Future<ResponseDataMap> getById(int id) async {
-    try {
-      final headers = await _headers();
-      final res =
-          await http.get(Uri.parse('$baseUrl/services/$id'), headers: headers);
-      final body = jsonDecode(res.body);
+  try {
+    final headers = await _headers();
 
-      if (res.statusCode == 200) {
-        final svc = ServiceModel.fromJson(body['data'] ?? body);
-        return ResponseDataMap(
-            status: true, message: 'Berhasil', data: body);
-      }
+    final res = await http.get(
+      Uri.parse('$baseUrl/services/$id'),
+      headers: headers,
+    );
+
+    final body = jsonDecode(res.body);
+
+    if (res.statusCode == 200) {
+      final raw = body['data'] ?? body;
+
       return ResponseDataMap(
-          status: false, message: body['message'] ?? 'Gagal');
-    } catch (e) {
-      return ResponseDataMap(status: false, message: 'Koneksi gagal: $e');
+        status: true,
+        message: body['message'] ?? 'Berhasil',
+        data: Map<String, dynamic>.from(raw),
+      );
     }
-  }
 
+    return ResponseDataMap(
+      status: false,
+      message: body['message'] ?? 'Gagal memuat detail layanan',
+    );
+  } catch (e) {
+    return ResponseDataMap(
+      status: false,
+      message: 'Koneksi gagal: $e',
+    );
+  }
+  }
   // ── CREATE  POST /services ────────────────────────────────────
   Future<ResponseDataMap> create({
     required String name,

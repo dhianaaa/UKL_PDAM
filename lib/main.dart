@@ -1,3 +1,7 @@
+import 'package:amerta_pay/views/bill_customer_view.dart';
+import 'package:amerta_pay/views/dashboard_customer_view.dart';
+import 'package:amerta_pay/views/profile_customer_view.dart';
+import 'package:amerta_pay/views/riwayat_customer_view.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/date_symbol_data_local.dart';
 
@@ -34,9 +38,7 @@ class AmertaPayApp extends StatelessWidget {
       title: 'AmertaPay',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFF26C6A6),
-        ),
+        colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF26C6A6)),
         fontFamily: 'Poppins',
         useMaterial3: true,
         scaffoldBackgroundColor: const Color(0xFFF0F4F8),
@@ -58,9 +60,14 @@ class AmertaPayApp extends StatelessWidget {
         '/profile-admin': (ctx) => const ProfileAdminView(),
         '/customer-admin': (ctx) => const KelolaCustomerView(),
         '/bill-admin': (ctx) => const KelolaBillView(),
+        // CUSTOMER
+        '/customer-dashboard': (ctx) => const CustomerDashboardView(),
+        '/customer-bill': (ctx) => const CustomerBillView(),
+        '/customer-riwayat': (ctx) => const CustomerRiwayatView(),
+        '/dashboard-customer': (ctx) => const CustomerDashboardView(),
+        '/customer-dashboard': (ctx) => const CustomerDashboardView(),
+        '/customer-profile': (ctx) => const CustomerProfileView(),
 
-        // ── CUSTOMER ──────────────────────────────────────────
-        '/dashboard-customer': (ctx) => const _TempCustomerDashboard(),
       },
     );
   }
@@ -90,10 +97,7 @@ class _TempPage extends StatelessWidget {
         child: Text(
           'Halaman $title\nakan dibuat selanjutnya.',
           textAlign: TextAlign.center,
-          style: const TextStyle(
-            fontSize: 16,
-            color: Color(0xFF4A5568),
-          ),
+          style: const TextStyle(fontSize: 16, color: Color(0xFF4A5568)),
         ),
       ),
     );
@@ -110,10 +114,7 @@ class _TempCustomerDashboard extends StatelessWidget {
       appBar: AppBar(
         title: const Text(
           'Dashboard Customer',
-          style: TextStyle(
-            fontWeight: FontWeight.w700,
-            color: Colors.white,
-          ),
+          style: TextStyle(fontWeight: FontWeight.w700, color: Colors.white),
         ),
         backgroundColor: const Color(0xFF26C6A6),
         elevation: 0,
@@ -122,10 +123,7 @@ class _TempCustomerDashboard extends StatelessWidget {
         child: Text(
           'Dashboard Customer\nakan dibuat selanjutnya.',
           textAlign: TextAlign.center,
-          style: TextStyle(
-            fontSize: 16,
-            color: Color(0xFF4A5568),
-          ),
+          style: TextStyle(fontSize: 16, color: Color(0xFF4A5568)),
         ),
       ),
     );
